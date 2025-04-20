@@ -276,6 +276,89 @@ app.get("/models", authMiddleware, async (req, res) => {
   });
 });
 
+app.post("/toggle-like", authMiddleware, async (req, res) => {
+  try {
+    const { imageId } = req.body;
+
+    if (!imageId) {
+      res.status(400).json({
+        success: false,
+        error: "Image ID is required",
+      });
+      return;
+    }
+
+    const image = await prismaClient.outputImages.findUnique({
+      where: { id: imageId, userId: req.userId },
+    });
+
+    if (!image) {
+      res.status(404).json({
+        success: false,
+        error: "Image not found",
+      });
+      return;
+    }
+
+    const updatedImage = await prismaClient.outputImages.update({
+      where: { id: imageId },
+      data: {
+        likedImage: image.likedImage === "like" ? "unlike" : "like",
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Image ${updatedImage.likedImage === "like" ? "liked" : "unliked"}`,
+      likedStatus: updatedImage.likedImage,
+    });
+  } catch (error) {
+    console.error("Error toggling like:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to toggle like status",
+    });
+  }
+});
+
+app.get("/liked/bulk", authMiddleware, async (req, res) => {
+  try {
+    const likedImages = await prismaClient.outputImages.findMany({
+      where: {
+        userId: req.userId,
+        likedImage: 'like'
+      },
+      select: {
+        id: true,
+        imageUrl: true,
+        modelId: true,
+        prompt: true,
+        likedImage:true,
+        createdAt: true,
+        model: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    res.json({
+      success: true,
+      images:likedImages
+    });
+  } catch (error) {
+    console.error("Error fetching liked images:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch liked images"
+    });
+  }
+});
+
 app.post("/fal-ai/webhook/train", async (req, res) => {
   console.log("====================Received training webhook====================");
   console.log("Received training webhook:", req.body);

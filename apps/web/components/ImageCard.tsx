@@ -1,16 +1,48 @@
-import { ArrowDown } from "lucide-react";
-import { Skeleton } from "./ui/skeleton";
+"use client"
+
+import { Heart, Copy, ArrowDownToLine } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
 import { TImage } from "./Camera";
 
 interface ImageCardProps extends TImage {
-  onClick: () => void;
+  onClickSave: () => void;
+  onCopyClick: () => void;
+  onDownloadClick: () => void;
+  onImageClick: () => void;
 }
-export function ImageCard({ id, status, imageUrl, onClick ,prompt}: ImageCardProps) {
+
+export function ImageCard({
+  id,
+  status,
+  imageUrl,
+  likedImage,
+  prompt,
+  onClickSave,
+  onCopyClick,
+  onDownloadClick,
+  onImageClick
+}: ImageCardProps) {
+  const [liked, setLiked] = useState(likedImage);
   if (!imageUrl) return null;
 
+  useEffect(() => {
+    if (likedImage !== undefined && likedImage !== null) {
+      setLiked(likedImage);
+    }
+  }, [likedImage]);
+
+  const handleButtonClick = (e: React.MouseEvent, callback: () => void) => {
+    e.stopPropagation();
+    callback();
+  };
+  
   return (
-    <div onClick={onClick} className="group relative rounded-none overflow-hidden max-w-[400px] cursor-zoom-in">
+    <div
+      className="group relative rounded-none overflow-hidden max-w-[300px] cursor-zoom-in"
+      onClick={onImageClick}
+    >
       <div className="flex gap-4 min-h-32">
         <Image
           key={id}
@@ -22,21 +54,37 @@ export function ImageCard({ id, status, imageUrl, onClick ,prompt}: ImageCardPro
           priority
         />
       </div>
-      <div className="opacity-0 absolute transition-normal duration-200 group-hover:opacity-100 flex items-center justify-between bottom-0 left-0 right-0 p-4 bg-opacity-70 text-white line-clamp-1 ">
-        <p>{prompt}</p>
-        <span className="flex items-center justify-between bg-primary-foreground text-muted-foreground rounded-md px-2 py-1">
-          <ArrowDown />
-        </span>
-      </div>
-    </div>
-  );
-}
 
-export function ImageCardSkeleton() {
-  return (
-    <div className="rounded-none mb-4 overflow-hidden max-w-[400px] cursor-pointer">
-      <div className="flex gap-4 min-h-32">
-        <Skeleton className={`w-full h-[300px] rounded-none`} />
+      <div
+        className={`absolute bottom-4 left-4 transition-opacity flex gap-[1vw] duration-300 ${
+          liked == "liked" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        }`}
+      >
+        <Button
+          variant={"link"}
+          onClick={(e) => handleButtonClick(e, onClickSave)}
+          className={`w-[3vw] h-[6vh] border rounded-full transition-all
+            ${liked == "like"
+              ? "bg-red-500 text-white border-red-500"
+              : "bg-transparent text-white border-white"}
+          `}
+        >
+          <Heart fill={liked ? "white" : "none"} />
+        </Button>
+        <Button
+          variant={"secondary"}
+          onClick={(e) => handleButtonClick(e, onCopyClick)}
+          className={`w-[3vw] h-[6vh] border rounded-full transition-all bg-transparent text-white border-white`}
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={"secondary"}
+          onClick={(e) => handleButtonClick(e, onDownloadClick)}
+          className={`w-[3vw] h-[6vh] border rounded-full transition-all bg-transparent text-white border-white`}
+        >
+          <ArrowDownToLine className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );

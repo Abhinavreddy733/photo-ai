@@ -5,6 +5,7 @@ import { Appbar } from "@/components/Appbar";
 import { Providers } from "@/components/providers/Providers";
 import { Footer } from "@/components/Footer";
 import Script from "next/script";
+import { Toaster } from "@/components/ui/sonner"
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -44,6 +45,7 @@ export default function RootLayout({
             <Appbar />
             <main className="flex-1">{children}</main>
             <Footer />
+            <Toaster position="bottom-right" richColors closeButton />
           </div>
         </Providers>
       </body>

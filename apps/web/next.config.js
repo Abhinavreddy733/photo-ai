@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [
+    domains: ['static-alter1.vidnoz.com','photoai.com', 'r2-us-west.photoai.com'],
+    remotePatterns:  [
       {
         protocol: "https",
         hostname: "r2-us-west.photoai.com",

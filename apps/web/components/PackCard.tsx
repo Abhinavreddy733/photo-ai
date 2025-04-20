@@ -92,16 +92,15 @@ export function PackCard(props: TPack & { selectedModelId: string }) {
                   Autoplay({
                     delay: 4000,
                   }),
-                ]} className="w-full">
+                ]} className="w-[25vw]">
                   <CarouselContent>
                     {images.map((imageUrl, index) => (
                       <CarouselItem key={index}>
-                        <div className="relative aspect-square">
-                          <Image
+                        <div className="relative aspect-square flex items-center justify-center">
+                          <img
                             src={imageUrl!}
                             alt={`${props.name} preview ${index + 1}`}
-                            fill
-                            className="object-cover"
+                            className="object-fill"
                           />
                         </div>
                       </CarouselItem>

@@ -4,37 +4,34 @@ import { useAuth } from "@clerk/nextjs";
 import { BACKEND_URL } from "@/app/config";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { ImageCard } from "./ImageCard";
+import SavedImageCard from "./SavedImageCard";
 import { motion } from "framer-motion";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner"
+import { ChevronLeft, ChevronRight, Copy, Download } from "lucide-react";
 import { Button } from "./ui/button";
-import { Download, ChevronLeft, ChevronRight, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
-export interface TImage {
+export interface savedimageprops {
   id: string;
   imageUrl: string;
   modelId: string;
   userId: string;
+  likedImage:string;
   prompt: string;
-  likedImage: string;
-  falAiRequestId: string;
-  status: string;
   createdAt: string;
-  updatedAt: string;
 }
 
-export function Camera() {
-  const [images, setImages] = useState<TImage[]>([]);
-  const [imagesLoading, setImagesLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<TImage | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
-  const { getToken } = useAuth();
+function Saved() {
+    const [images, setImages] = useState<savedimageprops[]>([]);
+    const [imagesLoading, setImagesLoading] = useState(true);
+    const [selectedImage, setSelectedImage] = useState<savedimageprops | null>(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+    const { getToken } = useAuth();
 
   const fetchImages = async () => {
     try {
       const token = await getToken();
-      const response = await axios.get(`${BACKEND_URL}/image/bulk`, {
+      const response = await axios.get(`${BACKEND_URL}/liked/bulk`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setImages(response.data.images);
@@ -45,59 +42,56 @@ export function Camera() {
     }
   };
 
-  const togglelike = async (id: string) => {
+  const removeFromSaved = async (id:string) => {
     try {
-      setImagesLoading(true);
-      const token = await getToken();
-      const response = await axios.post(
-        `${BACKEND_URL}/toggle-like`,
-        { imageId: id },
-        {
-          headers: { Authorization: `Bearer ${token}` },
+        setImagesLoading(true);
+        const token = await getToken();
+        const response = await axios.post(`${BACKEND_URL}/toggle-like`,{ imageId : id }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        toast(`${response.data.message} Successfully`)
+        await fetchImages();
+        setImagesLoading(false);
+        } catch (error) {
+            console.error("Failed to remove saved image:", error);
         }
-      );
-      toast(`${response.data.message} Successfully`);
-      await fetchImages();
-      setImagesLoading(false);
-    } catch (error) {
-      console.error("Failed to Save image:", error);
-    }
-  };
+}
 
-  const copytoclipboard = async (prompt: string) => {
-    try {
-      await navigator.clipboard.writeText(prompt);
-      toast("Prompt Copied Successfully");
-    } catch (e) {
-      console.error("Failed to copy prompt: ", e);
-    }
-  };
+const copyToClipBoard = async (prompt:string) => {
+  try {
+    await navigator.clipboard.writeText(prompt);
+    toast("Prompt Copied Successfully")
+  }catch(e) {
+    console.error('Failed to copy prompt: ', e);
+  }
+}
 
-  const downloadImage = async (imageUrl: string, fileName: string = "image") => {
-    try {
-      const response = await fetch(imageUrl);
-      if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const extension = "png";
+const downloadImage = async (imageUrl: string, fileName: string = "image") => {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const extension = 'png';
+    
+    link.download = `${fileName.replace(/[^a-z0-9]/gi, '_')}.${extension}`;
+    document.body.appendChild(link);
+    toast("Image Downloaded Successfully")
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+    
+  } catch (error) {
+    console.error('Download failed:', error);
+    alert('Download failed. Please try again.');
+  }
+};
 
-      link.download = `${fileName.replace(/[^a-z0-9]/gi, "_")}.${extension}`;
-      document.body.appendChild(link);
-      link.click();
-      toast("Image Downloaded Successfully")
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    } catch (error) {
-      console.error("Download failed:", error);
-      alert("Download failed. Please try again.");
-    }
-  };
-
-  const handleImageClick = (image: TImage) => {
+  const handleImageClick = (image: savedimageprops) => {
     const index = images.findIndex((img) => img.id === image.id);
     setCurrentImageIndex(index);
     setSelectedImage(image);
@@ -120,58 +114,53 @@ export function Camera() {
   };
 
   useEffect(() => {
-    fetchImages();
-  }, []);
+    fetchImages()
+  },[])
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Your Gallery</h2>
-        <span className="text-xs select-none bg-secondary/40 font-semibold border border-secondary text-muted-foreground px-2 py-1 rounded-full">
-          {images.length} images
-        </span>
-      </div>
+    <div className="space-y-4" >
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Saved Gallery</h2>
+          <span className="text-xs select-none bg-secondary/40 font-semibold border border-secondary text-muted-foreground px-2 py-1 rounded-full">
+            {images.length} images
+          </span>
+        </div>
+        <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+        >
+            {imagesLoading
+              ? [...Array(8)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="bg-neutral-300 h-48 rounded-lg animate-pulse"
+                  />
+                ))
+              :images.map(image => (
+                  <div
+                    key={image.id}
+                    className="cursor-pointer transition-transform mb-4 hover:scale-[1.02]"
+                  >
+                      <SavedImageCard
+                        id={image.id}
+                        imageUrl={image.imageUrl}
+                        modelId={image.modelId}
+                        likedImage={image.likedImage}
+                        prompt={image.prompt}
+                        userId={image.userId}
+                        onClick={ () => removeFromSaved(image.id)}
+                        onCopyClick = { () => copyToClipBoard(image.prompt) }
+                        onDownloadClick = { () => downloadImage(image.imageUrl) }
+                        onImageClick={() => handleImageClick(image)}
+                        createdAt={image.createdAt}
+                        />
+                  </div>
+              ))}
+        </motion.div>
 
-      <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {imagesLoading
-          ? [...Array(8)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="bg-neutral-300 h-48 rounded-lg animate-pulse"
-              />
-            ))
-          : images.map((image, index) => (
-              <div
-                key={image.id + index}
-                className="cursor-pointer transition-transform mb-4 hover:scale-[1.02]"
-                onClick={() => handleImageClick(image)}
-              >
-                <ImageCard
-                  id={image.id}
-                  status={image.status}
-                  imageUrl={image.imageUrl}
-                  onClickSave={() => togglelike(image.id)}
-                  onCopyClick={() => copytoclipboard(image.prompt)}
-                  onDownloadClick={() => downloadImage(image.imageUrl)}
-                  onImageClick={() => handleImageClick(image)}
-                  modelId={image.modelId}
-                  userId={image.userId}
-                  prompt={image.prompt}
-                  likedImage={image.likedImage}
-                  falAiRequestId={image.falAiRequestId}
-                  createdAt={image.createdAt}
-                  updatedAt={image.updatedAt}
-                />
-              </div>
-            ))}
-      </motion.div>
-
-      {!imagesLoading && images.length === 0 && (
+        {!imagesLoading && images.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -183,7 +172,7 @@ export function Camera() {
         </motion.div>
       )}
 
-      <Dialog
+<Dialog
         open={!!selectedImage}
         onOpenChange={(open) => {
           if (!open) setSelectedImage(null);
@@ -194,7 +183,6 @@ export function Camera() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
               <div className="relative h-full w-full bg-transparent flex items-center justify-center">
                 <div className="w-full h-full relative">
-                  {/* Navigation Arrows */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -207,7 +195,7 @@ export function Camera() {
                   >
                     <ChevronLeft className="h-6 w-6" />
                   </button>
-
+                  
                   <img
                     src={selectedImage.imageUrl}
                     alt={selectedImage.prompt}
@@ -267,12 +255,11 @@ export function Camera() {
                   <Button
                     variant="outline"
                     className="gap-2"
-                    onClick={() => copytoclipboard(selectedImage.prompt)}
+                    onClick={() => copyToClipBoard(selectedImage.prompt)}
                   >
                     <Copy className="h-4 w-4" />
                     Copy Prompt
                   </Button>
-
                 </div>
               </div>
             </div>
@@ -280,5 +267,7 @@ export function Camera() {
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }
+
+export default Saved

@@ -34,7 +34,7 @@ model Model {
   name            String
   type            ModelTypeEnum
   age             Int
-  ethinicity      EthenecityEnum  
+  ethinicity      EthenecityEnum
   eyeColor        EyeColorEnum
   bald            Boolean
   userId          String
@@ -43,6 +43,7 @@ model Model {
   thumbnail       String?
   trainingStatus  ModelTrainingStatusEnum @default(Pending)
   outputImages    OutputImages[]
+  
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   falAiRequestId  String?
@@ -57,6 +58,11 @@ enum OutputImageStatusEnum {
   Failed
 }
 
+enum OutputImageLiked {
+  like
+  unlike
+}
+
 model OutputImages {
   id        String  @id   @default(uuid())
   imageUrl  String  @default("")
@@ -66,6 +72,7 @@ model OutputImages {
   falAiRequestId    String?
   status    OutputImageStatusEnum   @default(Pending)
   model     Model   @relation(fields: [modelId], references: [id])
+  likedImage OutputImageLiked  @default(unlike)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([falAiRequestId])
